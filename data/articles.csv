@@ -1,0 +1,5 @@
+id,repairable,under_warranty
+1,True,True
+2,False,False
+3,False,True
+4,True,False
