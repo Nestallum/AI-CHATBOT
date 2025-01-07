@@ -1,11 +1,12 @@
 import os
+import json
 import pandas as pd
 from api import *
 
 def load_all_data(data_dir="data/"):
     """
-    Charge tous les fichiers CSV (articles, disponibilité) en tant que DataFrames pandas.
-    Retourne un dictionnaire contenant les données.
+    Loads all CSV files (articles, availability) as pandas DataFrames.
+    Returns a dictionary containing the data.
     """
     files = {
         "articles": "articles.csv",
@@ -20,58 +21,58 @@ def load_all_data(data_dir="data/"):
 
 def get_info(data, dataset, component_id, column):
     """
-    Récupère une valeur spécifique d'une colonne d'un dataset pour un ID donné.
+    Retrieves a specific value from a dataset column for a given ID.
 
-    Paramètres :
-        data (dict) : Dictionnaire contenant les DataFrames.
-        dataset (str) : Nom du dataset
-        component_id (int) : ID du composant cible.
-        column (str) : Colonne cible.
+    Parameters:
+        data (dict): Dictionary containing the DataFrames.
+        dataset (str): Dataset name.
+        component_id (int): Target component ID.
+        column (str): Target column.
 
-    Retourne :
-        La valeur dans la colonne spécifiée pour l'ID donné.
+    Returns:
+        The value in the specified column for the given ID.
     """
     return data[dataset].loc[data[dataset]["id"] == component_id, column].values[0]
 
 def display_menu():
     """
-    Affiche un menu interactif pour l'utilisateur avec des descriptions claires.
+    Displays an interactive menu for the user with clear descriptions.
     """
     print("\n-------------------------------------------")
-    print("🤖 Bonjour, je suis votre assistant AI intelligent. Voici ce que je peux faire pour vous :")
-    print("1. 📦 Faire une demande de réparation")
-    print("2. 💰 Faire une demande de remboursement")
-    print("3. 🔍 Demander des informations ou des conseils")
-    print("4. 📄 Demander un document")
-    print("5. 🚚 Suivre une commande")
-    print("6. ⚠️  Signaler un problème produit")
-    print("0. ❌ Quitter")
+    print("🤖 Hello, I am your intelligent AI assistant. Here is what I can do for you:")
+    print("1. 📦 Submit a repair request")
+    print("2. 💰 Submit a refund request")
+    print("3. 🔍 Request information or advice")
+    print("4. 📄 Request a document")
+    print("5. 🚚 Track an order")
+    print("6. ⚠️  Report a product issue")
+    print("0. ❌ Exit")
     print("-------------------------------------------")
 
 def user_choice():
     """
-    Gère les choix de l'utilisateur et construit un scénario basé sur ses réponses.
+    Handles user choices and builds a scenario based on their responses.
     """
     data = load_all_data(data_dir="data/")
     scenario = []
-    time_now = 12  # Exemple d'heure actuelle
+    time_now = 12  # Example of current time
 
     while True:
         display_menu()
         try:
-            number = int(input("👉 Que souhaitez-vous faire ? Entrez un numéro : "))
+            number = int(input("👉 What would you like to do? Enter a number: "))
         except ValueError:
-            print("⛔ Entrée invalide. Veuillez entrer un numéro.")
+            print("⛔ Invalid input. Please enter a number.")
             continue
 
         if number == 0:
-            print("👋 Merci de m'avoir utilisé. À bientôt !")
+            print("👋 Thank you for using me. See you soon!")
             break
 
         match number:
             case 1:
                 scenario.append("repair request")
-                order_id = int(input("🔧 Entrez votre numéro de commande : "))
+                order_id = int(input("🔧 Enter your order ID: "))
                 if not get_info(data, "articles", order_id, "repairable"):
                     scenario.append("non repairable product")
                 if get_info(data, "articles", order_id, "under_warranty"):
@@ -80,14 +81,14 @@ def user_choice():
 
             case 2:
                 scenario.append("refund request")
-                order_id = int(input("💰 Entrez votre numéro de commande : "))
+                order_id = int(input("💰 Enter your order ID: "))
                 if get_info(data, "articles", order_id, "under_warranty"):
                     scenario.append("product under warranty")
                 return scenario
 
             case 3:
                 scenario.append("information request")
-                info_choice = input("🔍 Voulez-vous des conseils (A) ou juste des informations (I) ? ").strip().upper()
+                info_choice = input("🔍 Do you want advice (A) or just information (I)? ").strip().upper()
                 if info_choice == "A":
                     scenario.append("advice request on product")
                     if not int(get_info(data, "availability", 1, "horaire_start")) <= time_now <= int(get_info(data, "availability", 1, "horaire_end")):
@@ -96,17 +97,17 @@ def user_choice():
 
             case 4:
                 scenario.append("document request")
-                has_order_id = input("📄 Avez-vous un numéro de commande ? (Y/N) : ").strip().upper()
+                has_order_id = input("📄 Do you have an order ID? (Y/N): ").strip().upper()
                 if has_order_id == "Y":
-                    order_id = int(input("📄 Entrez votre numéro de commande : "))
+                    order_id = int(input("📄 Enter your order ID: "))
                     scenario.append("order id")
                 return scenario
 
             case 5:
                 scenario.append("tracking request")
-                has_order_id = input("🚚 Avez-vous un numéro de commande ? (Y/N) : ").strip().upper()
+                has_order_id = input("🚚 Do you have an order ID? (Y/N): ").strip().upper()
                 if has_order_id == "Y":
-                    order_id = int(input("🚚 Entrez votre numéro de commande : "))
+                    order_id = int(input("🚚 Enter your order ID: "))
                     scenario.append("order id")
                 return scenario
 
@@ -117,21 +118,20 @@ def user_choice():
                 return scenario
 
             case _:
-                print("⛔ Choix invalide. Veuillez choisir un numéro valide.")
-
+                print("⛔ Invalid choice. Please choose a valid number.")
 
 def main():
     """
-    Fonction principale pour exécuter l'application interactive.
+    Main function to run the interactive application.
     """
     scenario = user_choice()
     if scenario:
-        print("\n✨ Voici votre scénario :")
+        print("\n✨ Here is your scenario:")
         print(json.dumps(scenario, indent=4, ensure_ascii=False))
 
-        # Appeler l'API avec le scénario
+        # Call the API with the scenario
         solutions = call_api(scenario)
-        print("\n💡 Voici les solutions proposées :")
+        print("\n💡 Here are the proposed solutions:")
         print(json.dumps(solutions, indent=4, ensure_ascii=False))
 
 if __name__ == "__main__":
