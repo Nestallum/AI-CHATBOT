@@ -1,76 +1,74 @@
-import json
 import requests
 from private_information import *
 
-# Définir les en-têtes pour l'API
+# API headers
 headers = {
     "x-api-key": api_key
 }
 
 def extract_elements_and_options(metadata):
     """
-    Extrait les labels et IDs des éléments, ainsi que les IDs des options.
+    Extracts labels and IDs of elements, as well as the IDs of options.
 
-    Paramètres :
-        metadata (dict) : Données contenant les sections 'elements' et 'options'.
+    Parameters:
+        metadata (dict): Data containing 'elements' and 'options' sections.
 
-    Retourne :
-        tuple : 
-            - Un dictionnaire {label: id} pour les éléments.
-            - Une liste de dictionnaires [{"id": id}] pour les options.
+    Returns:
+        tuple:
+            - A dictionary {label: id} for elements.
+            - A list of dictionaries [{"id": id}] for options.
     """
-    elems = {}  # Stocke les labels et IDs des éléments
-    opts = []   # Stocke les IDs des options
+    elems = {}  # Stores labels and IDs of elements
+    opts = []   # Stores IDs of options
 
-    # Récupère les éléments et options
+    # Retrieve elements and options
     elem_items = metadata.get('elements', [])
     opts_items = metadata.get('options', [])
 
-    # Traite les éléments et ajoute leurs labels et IDs dans le dictionnaire
+    # Process elements and add their labels and IDs to the dictionary
     for item in elem_items:
         label = item.get("label")
         id_value = item.get("id")
         elems[label] = id_value
 
-    # Traite les options et ajoute leurs IDs dans une liste
+    # Process options and add their IDs to a list
     for item in opts_items:
         id_value = item.get("id")
         opts.append({"id": id_value})
 
     return elems, opts
 
-
 def check_solutions(options):
     """
-    Vérifie les solutions valides parmi les options fournies.
+    Verifies valid solutions among the provided options.
 
-    Paramètres :
-        options (list) : Liste des options contenant la clé 'isSolution'.
+    Parameters:
+        options (list): List of options containing the 'isSolution' key.
 
-    Retourne :
-        list : Une liste des noms des options valides ou False si aucune.
+    Returns:
+        list: A list of valid option labels or None if none.
     """
-    # Liste pour stocker les noms des options valides
+    # List to store names of valid options
     true_options = []
 
-    # Parcourir chaque option
+    # Iterate through each option
     for option in options:
-        if option['isSolution']:  # Vérifie si 'isSolution' est True
-            true_options.append(option['option']['label'])  # Ajoute le label de l'option
+        if option['isSolution']:  # Check if 'isSolution' is True
+            true_options.append(option['option']['label'])  # Add the label of the option
 
-    # Retourne les options valides ou False si aucune
+    # Return valid options or None if none
     return true_options if true_options else None
 
 def get_data_api(url, api_key):
     """
-    Récupère les données de l'API et extrait les labels et IDs.
+    Retrieves data from the API and extracts labels and IDs.
 
-    Paramètres :
-        url (str) : L'URL de l'API.
-        api_key (str) : La clé API pour l'authentification.
+    Parameters:
+        url (str): The API URL.
+        api_key (str): API key for authentication.
 
-    Retourne :
-        metadata : Les metadata retournées
+    Returns:
+        metadata: Returned metadata
     """
     headers = {
         "x-api-key": api_key
@@ -81,24 +79,23 @@ def get_data_api(url, api_key):
         if response.status_code == 200:
             metadata = response.json()
         elif response.status_code == 400:
-            print("Erreur 400 : Requête invalide.")
+            print("Error 400: Invalid request.")
         else:
-            print(f"Erreur {response.status_code} : {response.text}")
+            print(f"Error {response.status_code}: {response.text}")
     except Exception as e:
-        print(f"Une erreur est survenue : {e}")
+        print(f"An error occurred: {e}")
     return metadata
 
 def call_api(scenario):
     """
-    Appelle l'API pour évaluer les scénarios et retourne les options valides.
+    Calls the API to evaluate scenarios and returns valid options.
 
-    Paramètres :
-        scenario (list) : Liste des labels des éléments à inclure dans le scénario.
+    Parameters:
+        scenario (list): List of labels of elements to include in the scenario.
 
-    Retourne :
-        list : Les solutions valides ou None si aucune.
+    Returns:
+        list: Valid solutions or None if none.
     """
-
     metadata = get_data_api(url, api_key)
     elements, options = extract_elements_and_options(metadata)
 
@@ -109,7 +106,7 @@ def call_api(scenario):
 
     ids = []
 
-    # Préparer les IDs des éléments du scénario
+    # Prepare IDs of scenario elements
     for case in scenario:
         temp_dict = dict()
         temp_dict["id"] = elements[case]
@@ -122,18 +119,17 @@ def call_api(scenario):
     }
 
     try:
-        # Envoyer la requête POST avec la charge utile JSON
+        # Send the POST request with the JSON payload
         response = requests.post(url, headers=headers, json=payload)
 
         if response.status_code == 200:
             metadata = response.json()
         elif response.status_code == 400:
-            print("Erreur 400 : Requête invalide.")
+            print("Error 400: Invalid request.")
         else:
-            print(f"Erreur {response.status_code} : {response.text}")
+            print(f"Error {response.status_code}: {response.text}")
     except Exception as e:
-        print(f"Une erreur est survenue : {e}")
+        print(f"An error occurred: {e}")
 
-    # Retourner les solutions valides
+    # Return valid solutions
     return check_solutions(metadata)
-
