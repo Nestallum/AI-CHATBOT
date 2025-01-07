@@ -1,0 +1,331 @@
+---
+openapi: 3.0.2
+info:
+  title: rAIson API
+  version: 1.0.0
+  description: Run your raison project
+  contact:
+    name: Argument Theory
+    url: https://www.argument-theory.com/
+    email: support@argument-theory.com
+  x-logo:
+    url: https://ai-raison.com/img/logo.7f9d17f7.webp
+    altText: rAIson logo
+servers:
+- url: "https://api.ai-raison.com/executions-{environment}"
+  description: ""
+  variables:
+    environment:
+      default: production
+paths:
+  /{appId}/{version}:
+    get:
+      tags:
+      - metadata
+      responses:
+        "200":
+          $ref: '#/components/responses/MetadataResponse'
+        "400":
+          $ref: '#/components/responses/ErrorMessage'
+        "401":
+          $ref: '#/components/responses/ErrorMessage'
+        "500":
+          $ref: '#/components/responses/ErrorMessage'
+      operationId: getMetadata
+      summary: Get application metadata
+      x-amazon-apigateway-integration:
+        httpMethod: GET
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RaisonGorgias2.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: when_no_match
+        contentHandling: CONVERT_TO_TEXT
+        type: aws_proxy
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RaisonRequest'
+        required: true
+      tags:
+      - run
+      responses:
+        "200":
+          $ref: '#/components/responses/RaisonResponse'
+        "400":
+          $ref: '#/components/responses/ErrorMessage'
+        "401":
+          $ref: '#/components/responses/ErrorMessage'
+        "500":
+          $ref: '#/components/responses/ErrorMessage'
+      operationId: query
+      summary: Query an application
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RaisonGorgias2.Arn}/invocations"
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: when_no_match
+        contentHandling: CONVERT_TO_TEXT
+        type: aws_proxy
+    parameters:
+    - name: appId
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: version
+      schema:
+        type: string
+      in: path
+      required: true
+components:
+  schemas:
+    RaisonRequest:
+      title: Root Type for RaisonRequest
+      description: ""
+      required:
+      - elements
+      type: object
+      properties:
+        elements:
+          writeOnly: true
+          description: Describe facts
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+        options:
+          writeOnly: false
+          description: Provided when you want to check a specific option
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+          readOnly: false
+        limit:
+          description: Limit the number of solutions
+          default: 1
+          type: integer
+      example:
+        elements:
+        - name: check date
+          parameters:
+          - name: "Y"
+            value: "2024"
+          - name: D
+            value: "12"
+          - name: M
+            value: "1"
+        options:
+        - id: OPT1
+    Option:
+      title: Root Type for Option
+      description: ""
+      required:
+      - id
+      type: object
+      properties:
+        label:
+          description: ""
+          type: string
+          readOnly: true
+        id:
+          description: ""
+          type: string
+      example:
+        id: option1
+        label: option1
+    Element:
+      title: Root Type for Element
+      description: ""
+      required:
+      - id
+      type: object
+      properties:
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Parameter'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        id:
+          description: ""
+          type: string
+      example:
+        label: element1
+        parameters:
+        - label: param1
+          value: value1
+        - label: param2
+          value: value2
+    Solution:
+      title: Root Type for Solution
+      description: ""
+      required:
+      - option
+      - isSolution
+      type: object
+      properties:
+        option:
+          $ref: '#/components/schemas/Option'
+          description: Proved option
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+        explanation:
+          description: Explaination why this option is a solution
+          type: array
+          items:
+            type: string
+        isSolution:
+          description: Indicate if this option is a solution or not
+          type: boolean
+      example:
+        option:
+          id: option1
+          label: Option 1
+        isSolution: true
+        explanation: Option 1 is a solution because...
+    Error:
+      title: Root Type for Error
+      description: ""
+      type: object
+      properties:
+        errorMessage:
+          type: string
+      example:
+        errorMessage: Something goes wrong
+    Parameter:
+      title: Root Type for Parameter
+      description: ""
+      type: object
+      properties:
+        name:
+          type: string
+          readOnly: false
+        value:
+          writeOnly: true
+          type: string
+      example:
+        name: param1
+        value: value1
+    RaisonMetadataResponse:
+      title: Root Type for RaisonMetadataResponse
+      description: ""
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+        options:
+          description: ""
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+      example:
+        elements:
+        - label: check date
+          parameters:
+          - name: "Y"
+          - name: M
+          - name: D
+    Metadata:
+      title: Root Type for Metadata
+      description: ""
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+      example:
+        elements:
+        - name: check date
+          id: OPT125768
+          parameters:
+          - name: "Y"
+          - name: M
+          - name: D
+        options:
+        - name: go to park
+          id: OPT1
+    Demo:
+      title: Root Type for Demo
+      description: ""
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          format: int32
+          maximum: 100
+          minimum: 1
+          type: integer
+      example:
+        name: ee
+        value: 1
+  responses:
+    RaisonResponse:
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Solution'
+      description: ""
+    ErrorMessage:
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: ""
+    MetadataResponse:
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Metadata'
+      description: Set of elements and options
+  securitySchemes:
+    api-key:
+      type: apiKey
+      name: x-api-key
+      in: header
+security:
+- api-key: []
+tags:
+- name: metadata
+  description: ""
+  x-displayName: Metadata
+- name: run
+  description: ""
+  x-displayName: Run
+x-tagGroups:
+- name: Run your app
+  tags:
+  - metadata
+  - run
