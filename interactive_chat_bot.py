@@ -55,7 +55,7 @@ def user_choice():
     """
     data = load_all_data(data_dir="data/")
     scenario = []
-    time_now = 12  # Example of current time
+    time_now = 20  # Example of current time
 
     while True:
         display_menu()
